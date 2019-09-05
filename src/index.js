@@ -179,6 +179,7 @@ class App extends React.Component {
       const width = prediction.bbox[2]
       const height = prediction.bbox[3]
       const label = labels[parseInt(prediction.class)]
+      console.log(label)
       // Draw the bounding box.
       ctx.strokeStyle = '#00FFFF'
       ctx.lineWidth = 4
