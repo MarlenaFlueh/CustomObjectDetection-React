@@ -4,3 +4,7 @@
   left: 0;
   /* transform: scaleX(-1); */
 }
+
+.borderBottom {
+  margin-bottom: 400px;
+}

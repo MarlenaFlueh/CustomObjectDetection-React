@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 
+import numImg from "./img/num8.png"
 import * as tf from '@tensorflow/tfjs'
 import './styles.css'
 
@@ -120,11 +121,17 @@ const TFWrapper = model => {
 }
 
 class App extends React.Component {
+
+  // Reference to DOM elements
   videoRef = React.createRef()
   canvasRef = React.createRef()
+  imageRef = React.createRef()
 
   componentDidMount() {
+    // if webcam is running
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+
+      // webcam input
       const webCamPromise = navigator.mediaDevices
         .getUserMedia({
           audio: false,
@@ -142,12 +149,15 @@ class App extends React.Component {
           })
         })
 
+      // ibm machine learning model
       const modelPromise = tf.loadGraphModel(MODEL_JSON)
+      // get ibm model labels
       const labelsPromise = fetch(LABELS_URL).then(data => data.json())
+      // wait for all promises
       Promise.all([modelPromise, labelsPromise, webCamPromise])
         .then(values => {
           const [model, labels] = values
-          this.detectFrame(this.videoRef.current, model, labels)
+          this.detectFrame(this.videoRef.current, model, labels, this.imageRef.current)
         })
         .catch(error => {
           console.error(error)
@@ -155,17 +165,19 @@ class App extends React.Component {
     }
   }
 
-  detectFrame = (video, model, labels) => {
+  // create all
+  detectFrame = (video, model, labels, image) => {
     TFWrapper(model)
-      .detect(video)
+      .detect(image)
       .then(predictions => {
         this.renderPredictions(predictions, labels)
         requestAnimationFrame(() => {
-          this.detectFrame(video, model, labels)
+          this.detectFrame(video, model, labels, image)
         })
       })
   }
 
+  // create frame with classification
   renderPredictions = (predictions, labels) => {
     const ctx = this.canvasRef.current.getContext('2d')
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
@@ -218,6 +230,12 @@ class App extends React.Component {
           ref={this.canvasRef}
           width="600"
           height="500"
+        />
+        <img
+          ref={this.imageRef}
+          src={numImg}
+          alt="twos"
+          className="borderBottom"
         />
       </div>
     )
