@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 
-import numImg from "./img/smallNum8.png"
+import numImg from "./img/2num8.png"
 import * as tf from '@tensorflow/tfjs'
 import './styles.css'
 
@@ -57,8 +57,10 @@ const TFWrapper = model => {
         score: scores[indexes[i]]
       })
     }
-    console.log("Obj: " + objects)
-    return objects
+
+    const sortedObjects = [...objects].sort((a, b) => a.bbox[0] - b.bbox[0])
+
+    return sortedObjects
   }
 
   const detect = input => {
@@ -123,8 +125,11 @@ const TFWrapper = model => {
 
 class App extends React.Component {
 
+  state = {
+    mathObjects: []
+  }
+
   // Reference to DOM elements
-  videoRef = React.createRef()
   canvasRef = React.createRef()
   imageRef = React.createRef()
 
@@ -132,32 +137,12 @@ class App extends React.Component {
     // if webcam is running
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
 
-      // webcam input
-      const webCamPromise = navigator.mediaDevices
-        .getUserMedia({
-          audio: false,
-          video: {
-            facingMode: 'user'
-          }
-        })
-        .then(stream => {
-          window.stream = stream
-          this.videoRef.current.srcObject = stream
-          return new Promise((resolve, _) => {
-            this.videoRef.current.onloadedmetadata = () => {
-              resolve()
-            }
-          })
-        })
-
-      const imagePromise = numImg
-
       // ibm machine learning model
       const modelPromise = tf.loadGraphModel(MODEL_JSON)
       // get ibm model labels
       const labelsPromise = fetch(LABELS_URL).then(data => data.json())
       // wait for all promises
-      Promise.all([modelPromise, labelsPromise, imagePromise])
+      Promise.all([modelPromise, labelsPromise])
         .then(values => {
           const [model, labels] = values
           this.detectFrame(model, labels, this.imageRef.current)
@@ -173,10 +158,10 @@ class App extends React.Component {
     TFWrapper(model)
       .detect(image)
       .then(predictions => {
+        console.log("SORTED NUMS:")
+        console.log(predictions)
+        this.setState({ mathObjects: predictions })
         this.renderPredictions(predictions, labels)
-        requestAnimationFrame(() => {
-          this.detectFrame(model, labels, image)
-        })
       })
   }
 
@@ -216,18 +201,13 @@ class App extends React.Component {
     })
   }
 
+  itemsFound = () => {
+    return this.state.mathObjects.map(item => item.class + " ")
+  }
+
   render() {
     return (
       <div>
-        <video
-          className="size"
-          autoPlay
-          playsInline
-          muted
-          ref={this.videoRef}
-          width="600"
-          height="500"
-        />
         <canvas
           className="size"
           ref={this.canvasRef}
@@ -238,8 +218,8 @@ class App extends React.Component {
           ref={this.imageRef}
           src={numImg}
           alt="twos"
-          className="borderBottom"
         />
+        <p>Classes Found: {this.itemsFound()}</p>
       </div>
     )
   }
