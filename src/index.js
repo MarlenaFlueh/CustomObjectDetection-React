@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 
-import numImg from "./img/num8.png"
+import numImg from "./img/smallNum8.png"
 import * as tf from '@tensorflow/tfjs'
 import './styles.css'
 
@@ -57,6 +57,7 @@ const TFWrapper = model => {
         score: scores[indexes[i]]
       })
     }
+    console.log("Obj: " + objects)
     return objects
   }
 
@@ -149,15 +150,17 @@ class App extends React.Component {
           })
         })
 
+      const imagePromise = numImg
+
       // ibm machine learning model
       const modelPromise = tf.loadGraphModel(MODEL_JSON)
       // get ibm model labels
       const labelsPromise = fetch(LABELS_URL).then(data => data.json())
       // wait for all promises
-      Promise.all([modelPromise, labelsPromise, webCamPromise])
+      Promise.all([modelPromise, labelsPromise, imagePromise])
         .then(values => {
           const [model, labels] = values
-          this.detectFrame(this.videoRef.current, model, labels, this.imageRef.current)
+          this.detectFrame(model, labels, this.imageRef.current)
         })
         .catch(error => {
           console.error(error)
@@ -166,13 +169,13 @@ class App extends React.Component {
   }
 
   // create all
-  detectFrame = (video, model, labels, image) => {
+  detectFrame = (model, labels, image) => {
     TFWrapper(model)
       .detect(image)
       .then(predictions => {
         this.renderPredictions(predictions, labels)
         requestAnimationFrame(() => {
-          this.detectFrame(video, model, labels, image)
+          this.detectFrame(model, labels, image)
         })
       })
   }
